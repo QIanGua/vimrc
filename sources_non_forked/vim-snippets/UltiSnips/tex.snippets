@@ -1,12 +1,31 @@
+
 global !p
 texMathZones = ['texMathZone'+x for x in ['A', 'AS', 'B', 'BS', 'C', 'CS', 'D', 'DS', 'E', 'ES', 'F', 'FS', 'G', 'GS', 'H', 'HS', 'I', 'IS', 'J', 'JS', 'K', 'KS', 'L', 'LS', 'DS', 'V', 'W', 'X', 'Y', 'Z']]
 
 texIgnoreMathZones = ['texMathText']
 
+	rows = int_val(rows)
+	cols = int_val(cols)
+
+	offset = cols + 1
+	old_spacing = snip.buffer[snip.line][:snip.buffer[snip.line].rfind('\t') + 1]
+
+	snip.buffer[snip.line] = ''
+
+	final_str = old_spacing + "\\begin{tabular}{|" + "|".join(['$' + str(i + 1) for i in range(cols)]) + "|}\n"
+
+	for i in range(rows):
+		final_str += old_spacing + '\t'
+		final_str += " & ".join(['$' + str(i * cols + j + offset) for j in range(cols)])
+
+		final_str += " \\\\\\\n"
+
 texMathZoneIds = vim.eval('map('+str(texMathZones)+", 'hlID(v:val)')")
 texIgnoreMathZoneIds = vim.eval('map('+str(texIgnoreMathZones)+", 'hlID(v:val)')")
+	final_str += old_spacing + "\\end{tabular}\n$0"
 
 ignore = texIgnoreMathZoneIds[0]
+	snip.expand_anon(final_str)
 
 def math():
 	synstackids = vim.eval("synstack(line('.'), col('.') - (col('.')>=2 ? 1 : 0))")
@@ -16,9 +35,13 @@ def math():
 	except StopIteration:
 		return False
 endglobal
+def add_row(snip):
+	row_len = int(''.join(s for s in snip.buffer[snip.line] if s.isdigit()))
+	old_spacing = snip.buffer[snip.line][:snip.buffer[snip.line].rfind('\t') + 1]
 
 snippet template "Basic template" b
 \documentclass[a4paper]{article}
+	snip.buffer[snip.line] = ''
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -38,7 +61,7 @@ snippet template "Basic template" b
 	\import{./figures/}{#1.pdf_tex}
 }
 
-\pdfsuppresswarningpagegroup=1
+snippet "\\?b(egin)?" "begin{} / end{}" br
 
 \begin{document}
 	$0
@@ -46,7 +69,7 @@ snippet template "Basic template" b
 endsnippet
 
 snippet beg "begin{} / end{}" bA
-\\begin{$1}
+snippet "gentbl(\d+)x(\d+)" "Generate table of *width* by *height*" r
 	$0
 \\end{$1}
 endsnippet
@@ -230,12 +253,10 @@ endsnippet
 snippet bmat "bmat" iA
 \begin{bmatrix} $1 \end{bmatrix} $0
 endsnippet
-
 context "math()"
 snippet () "left( right)" iA
 \left( ${1:${VISUAL}} \right) $0
 endsnippet
-
 snippet lr "left( right)" i
 \left( ${1:${VISUAL}} \right) $0
 endsnippet
@@ -415,235 +436,40 @@ snippet nn "Tikz node" w
 $0
 endsnippet
 
-context "math()"
-snippet mcal "mathcal" iA
-\mathcal{$1}$0
+snippet gln "New glossary item" b
+\newglossaryentry{${1:identifier}}
+{
+  name={${2:name}},
+  first={${3:first occurrence}},
+  sort={${4:sort value}},
+  description={${0:description}},
+}
+endsnippet
+snippet glnl "New long glossary item" b
+\longnewglossaryentry{${1:identifier}}
+{
+  name={${2:name}},
+  first={${3:first occurrence}},
+  sort={${4:sort value}},
+}
+{
+  ${0:description}
+}
 endsnippet
 
-snippet lll "l" iA
-\ell
+# Bold text
+snippet bf "Bold"
+\textbf{$1} $0
 endsnippet
 
-context "math()"
-snippet nabl "nabla" iA
-\nabla 
+# Italic text
+snippet ita "Italics"
+\textit{$1} $0
 endsnippet
 
-context "math()"
-snippet xx "cross" iA
-\times 
+# Underlined text
+snippet und "Underline"
+\underline{$1} $0
 endsnippet
 
-priority 100
-snippet ** "cdot" iA
-\cdot 
-endsnippet
-
-context "math()"
-snippet norm "norm" iA
-\|$1\|$0
-endsnippet
-
-priority 100
-context "math()"
-snippet '(?<!\\)(sin|cos|arccot|cot|csc|ln|log|exp|star|perp)' "ln" rwA
-\\`!p snip.rv = match.group(1)`
-endsnippet
-
-priority 300
-context "math()"
-snippet dint "integral" wA
-\int_{${1:-\infty}}^{${2:\infty}} ${3:${VISUAL}} $0
-endsnippet
-
-priority 200
-context "math()"
-snippet '(?<!\\)(arcsin|arccos|arctan|arccot|arccsc|arcsec|pi|zeta|int)' "ln" rwA
-\\`!p snip.rv = match.group(1)`
-endsnippet
-
-
-priority 100
-context "math()"
-snippet -> "to" iA
-\to 
-endsnippet
-
-priority 200
-context "math()"
-snippet <-> "leftrightarrow" iA
-\leftrightarrow
-endsnippet
-
-context "math()"
-snippet !> "mapsto" iA
-\mapsto 
-endsnippet
-
-context "math()"
-snippet invs "inverse" iA
-^{-1}
-endsnippet
-
-context "math()"
-snippet compl "complement" iA
-^{c}
-endsnippet
-
-context "math()"
-snippet \\\ "setminus" iA
-\setminus
-endsnippet
-
-snippet >> ">>" iA
-\gg
-endsnippet
-
-snippet << "<<" iA
-\ll
-endsnippet
-
-
-snippet ~~ "~" iA
-\sim 
-endsnippet
-
-context "math()"
-snippet set "set" wA
-\\{$1\\} $0
-endsnippet
-
-snippet || "mid" iA
- \mid 
-endsnippet
-
-
-context "math()"
-snippet cc "subset" Ai
-\subset 
-endsnippet
-
-snippet notin "not in " iA
-\not\in 
-endsnippet
-
-context "math()"
-snippet inn "in " iA
-\in 
-endsnippet
-
-snippet NN "n" iA
-\N
-endsnippet
-
-snippet Nn "cap" iA
-\cap 
-endsnippet
-
-snippet UU "cup" iA
-\cup 
-endsnippet
-
-snippet uuu "bigcup" iA
-\bigcup_{${1:i \in ${2: I}}} $0
-endsnippet
-
-snippet nnn "bigcap" iA
-\bigcap_{${1:i \in ${2: I}}} $0
-endsnippet
-
-snippet OO "emptyset" iA
-\O
-endsnippet
-
-snippet RR "real" iA
-\R
-endsnippet
-
-snippet QQ "Q" iA
-\Q
-endsnippet
-
-snippet ZZ "Z" iA
-\Z
-endsnippet
-
-snippet <! "normal" iA
-\triangleleft 
-endsnippet
-
-snippet <> "hokje" iA
-\diamond 
-endsnippet
-
-
-context "math()"
-snippet '(?<!i)sts' "text subscript" irA
-_\text{$1} $0
-endsnippet
-
-context "math()"
-snippet tt "text" iA
-\text{$1}$0
-endsnippet
-
-context "math()"
-snippet case "cases" wA
-\begin{cases}
-	$1
-\end{cases}
-endsnippet
-
-snippet SI "SI" iA
-\SI{$1}{$2}
-endsnippet
-
-snippet bigfun "Big function" iA
-\begin{align*}
-	$1: $2 &\longrightarrow $3 \\\\
-	$4 &\longmapsto $1($4) = $0
-.\end{align*}
-endsnippet
-
-snippet cvec "column vector" iA
-\begin{pmatrix} ${1:x}_${2:1}\\\\ \vdots\\\\ $1_${2:n} \end{pmatrix}
-endsnippet
-
-priority 10
-context "math()"
-snippet "bar" "bar" riA
-\overline{$1}$0
-endsnippet
-
-priority 100
-context "math()"
-snippet "([a-zA-Z])bar" "bar" riA
-\overline{`!p snip.rv=match.group(1)`}
-endsnippet
-
-priority 10
-context "math()"
-snippet "hat" "hat" riA
-\hat{$1}$0
-endsnippet
-
-priority 100
-context "math()"
-snippet "([a-zA-Z])hat" "hat" riA
-\hat{`!p snip.rv=match.group(1)`}
-endsnippet
-
-snippet letw "let omega" iA
-Let $\Omega \subset \C$ be open.
-endsnippet
-
-
-snippet HH "H" iA
-\mathbb{H}
-endsnippet
-
-snippet DD "D" iA
-\mathbb{D}
-endsnippet
-
-# vim:ft=snippets
+# vim:ft=snippets:
